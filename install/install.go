@@ -154,18 +154,18 @@ func createTables(db *sql.DB) error {
 		return nil
 	}
 
-	// Define the queries to create the tables (replace these with actual SQL)
+	// Queries to create tables
 	companyCreateQuery := `CREATE TABLE "company"(
 		id SERIAL PRIMARY KEY,
 		company_name VARCHAR(32) NOT NULL,
-		username VARCHAR(32) NOT NULL,
+		username VARCHAR(32) NOT NULL UNIQUE,
 		company_password VARCHAR(32) NOT NULL,
 		no_of_grps INT NOT NULL,
 		no_of_devices INT NOT NULL
 	);`
 	groupCreateQuery := `CREATE TABLE grp (
 		id SERIAL PRIMARY KEY,
-		group_name VARCHAR(32),
+		group_name VARCHAR(32) ,
 		no_of_devices INT NOT NULL,
 		company_id INT,
 		FOREIGN KEY (company_id) REFERENCES company(id)
@@ -173,10 +173,10 @@ func createTables(db *sql.DB) error {
 	);`
 	devicesCreateQuery := `CREATE TABLE devices (
 		id SERIAL PRIMARY KEY,
-		device_name VARCHAR(32) NOT NULL,
+		device_name VARCHAR(32) NOT NULL ,
 		group_id INT,
 		company_id INT,
-		telemetry_data JSONB NOT NULL,
+		telemetry_data_schema JSONB NOT NULL,
 		device_description VARCHAR(100),
 		longitude DOUBLE PRECISION,
 		latitude DOUBLE PRECISION,
