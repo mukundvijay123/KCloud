@@ -88,34 +88,19 @@ func getCredentials(filename string) (map[string]interface{}, error) {
 
 }
 
-// Making the database and required tables within postgres
+// setupDB creates the two databases (kcloud and kcloud_data).
 func setupDB(db *sql.DB) error {
 
-	//Checking if KCloud Database Exists
-	dbName := "kcloud"
-	QueryForCheckingifDBExists := fmt.Sprintf(`SELECT 1 FROM pg_database WHERE datname= '%s';`, dbName)
-	//fmt.Println(QueryForCheckingifDBExists)
-	row, err := db.Query(QueryForCheckingifDBExists)
+	// Defining the database names
+	DbName := "kcloud"
+
+	// Create the metadata database (kcloud)
+	_, err := db.Exec(fmt.Sprintf(`CREATE DATABASE %s`, DbName))
 	if err != nil {
-		return fmt.Errorf("error while checking for existence of %s : %v", dbName, err)
-	}
-	defer row.Close()
-
-	rowCount := 0
-	for row.Next() {
-		rowCount++
-	}
-	if rowCount == 0 {
-		QueryForCreatingDB := fmt.Sprintf(`CREATE DATABASE %s`, dbName)
-		_, err = db.Exec(QueryForCreatingDB)
-
-		if err != nil {
-			return fmt.Errorf("error creating database %s : %v", dbName, err)
-		}
+		return fmt.Errorf("error creating database %s: %v", DbName, err)
 	}
 
 	return nil
-
 }
 
 func createTables(db *sql.DB) error {
@@ -178,6 +163,7 @@ func createTables(db *sql.DB) error {
 		company_id INT,
 		telemetry_data_schema JSONB NOT NULL,
 		device_description VARCHAR(100),
+		device_type VARCHAR(32),
 		longitude DOUBLE PRECISION,
 		latitude DOUBLE PRECISION,
 		FOREIGN KEY (group_id) REFERENCES grp(id) 
@@ -187,6 +173,14 @@ func createTables(db *sql.DB) error {
 		
 		
 	);`
+
+	telemetryCreateQuery := `CREATE TABLE data(
+		company_id INT NOT NULL,
+		device_id INT NOT NULL,
+		timestamp TIMESTAMPTZ NOT NULL,
+		telemetry_data JSONB,
+		PRIMARY KEY(company_id,device_id,timestamp)
+	) PARTITION BY LIST (company_id);`
 
 	// Check and create each table
 	if err := checkAndCreateTable("company", companyCreateQuery); err != nil {
@@ -198,6 +192,10 @@ func createTables(db *sql.DB) error {
 	}
 
 	if err := checkAndCreateTable("devices", devicesCreateQuery); err != nil {
+		return err
+	}
+
+	if err := checkAndCreateTable("data", telemetryCreateQuery); err != nil {
 		return err
 	}
 

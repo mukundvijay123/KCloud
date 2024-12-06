@@ -144,12 +144,14 @@ func (g *Grp) ProvisionGroup(c *Company, db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("error committing transaction for provisioning a group: %v", err)
 	}
+	log.Printf("Group provisioned successfully with ID: %d", g.ID)
 
 	return nil
 
 }
 
 func (d *Device) ProvisionDevice(g *Grp, c *Company) error {
+	//verify if device credentials are valid
 
 	return nil
 }
