@@ -159,11 +159,11 @@ func createTables(db *sql.DB) error {
 	devicesCreateQuery := `CREATE TABLE devices (
 		id SERIAL PRIMARY KEY,
 		device_name VARCHAR(32) NOT NULL ,
-		group_id INT,
-		company_id INT,
+		group_id INT NOT NULL,
+		company_id INT NOT NULL,
 		telemetry_data_schema JSONB NOT NULL,
 		device_description VARCHAR(100),
-		device_type VARCHAR(32),
+		device_type VARCHAR(32) NOT NULL,
 		longitude DOUBLE PRECISION,
 		latitude DOUBLE PRECISION,
 		FOREIGN KEY (group_id) REFERENCES grp(id) 
@@ -178,7 +178,7 @@ func createTables(db *sql.DB) error {
 		company_id INT NOT NULL,
 		device_id INT NOT NULL,
 		timestamp TIMESTAMPTZ NOT NULL,
-		telemetry_data JSONB,
+		telemetry_data JSONB NOT NULL,
 		PRIMARY KEY(company_id,device_id,timestamp)
 	) PARTITION BY LIST (company_id);`
 

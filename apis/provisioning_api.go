@@ -33,6 +33,7 @@ type Device struct {
 	GrpID               int             `json:"grp_id"`
 	CompanyID           int             `json:"company_id"`
 	DeviceName          string          `json:"device_name"`
+	DeviceType          string          `json:"device_type"`
 	DeviceDescription   string          `json:"device_description"`
 	Longitude           float64         `json:"longitude"`
 	Latitude            float64         `json:"latitude"`
@@ -56,10 +57,17 @@ func (c *Company) ProvisionCompany(db *sql.DB) error {
 		return fmt.Errorf("password cannot consist of spaces and should have only alphanumeric characters")
 	}
 
-	//
+	//starting a database transaction
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction")
+	}
+	defer tx.Rollback()
+
+	//provisioning a comapny
 	var existingCompanyID int
 	checkQuery := `SELECT id FROM company WHERE username = $1`
-	err := db.QueryRow(checkQuery, c.Username).Scan(&existingCompanyID)
+	err = tx.QueryRow(checkQuery, c.Username).Scan(&existingCompanyID)
 
 	if err != sql.ErrNoRows {
 		if err != nil {
@@ -68,16 +76,33 @@ func (c *Company) ProvisionCompany(db *sql.DB) error {
 
 		return fmt.Errorf("username %s is already taken", c.Username)
 	}
+
 	//Query to Insert company in companies table
 	insertCompanyQuery := `INSERT INTO company (company_name, username, company_password, no_of_grps, no_of_devices) 
                     VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	c.NoOfGrps = 0
 	c.NoOfDevices = 0
-	err = db.QueryRow(insertCompanyQuery, c.CompanyName, c.Username, c.CompanyPassword, c.NoOfGrps, c.NoOfDevices).Scan(&c.ID)
-
+	err = tx.QueryRow(insertCompanyQuery, c.CompanyName, c.Username, c.CompanyPassword, c.NoOfGrps, c.NoOfDevices).Scan(&c.ID)
 	if err != nil {
 		return fmt.Errorf("failed to provision company")
 	}
+
+	//Create partitioned table for  telemetry data
+	telemetryCreateQuery := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS data_company_%d 
+		PARTITION OF data
+		FOR VALUES IN (%d);
+	`, c.ID, c.ID)
+
+	_, err = tx.Exec(telemetryCreateQuery)
+	if err != nil {
+		return fmt.Errorf("failed to create partition table for company %d: %v", c.ID, err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
 	log.Printf("Company provisioned successfully with ID: %d", c.ID)
 
 	return nil
@@ -150,8 +175,112 @@ func (g *Grp) ProvisionGroup(c *Company, db *sql.DB) error {
 
 }
 
-func (d *Device) ProvisionDevice(g *Grp, c *Company) error {
+func (d *Device) ProvisionDevice(g *Grp, c *Company, db *sql.DB) error {
 	//verify if device credentials are valid
+	if !utils.IsValidName(d.DeviceName) {
+		log.Printf("%s : DeviceName cannot contain spaces and should only contain alphanumeric characters", d.DeviceName)
+		return fmt.Errorf("deviceName cannot contain spaces and should only contain alphanumeric characters")
+	}
+	if !utils.IsNotEmptySring(d.DeviceType) {
+		log.Printf("Invalid Device type")
+		return fmt.Errorf("invalid device type")
+	}
+	//checking if company  and group  id is   valid
+	var existingCompanyID int
+	companyCheckQuery := `SELECT id FROM company WHERE username = $1`
+	err := db.QueryRow(companyCheckQuery, c.Username).Scan(&existingCompanyID)
+	if err != nil {
+		return fmt.Errorf("failed to find company with username %v", c.Username)
+	}
+
+	var existingGroupID int
+	groupCheckQuery := `SELECT id FROM grp WHERE company_id = $1 AND group_name = $2`
+	err = db.QueryRow(groupCheckQuery, existingCompanyID, g.GroupName).Scan(&existingGroupID)
+	if err != nil {
+		return fmt.Errorf("failed to find group %v in company %v,error:%v", g.GroupName, c.CompanyName, err)
+
+	}
+	//verify if device_name is unique per group
+	uniqueDeviceQuery := `SELECT EXISTS( SELECT 1 
+						FROM devices 
+						WHERE company_id = $1
+						AND group_id = $2
+						AND device_name = $3
+						);`
+	var exists bool
+	err = db.QueryRow(uniqueDeviceQuery, existingCompanyID, existingGroupID, d.DeviceName).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check if device with name %v exists in group %v,db error", d.DeviceName, g.GroupName)
+	} else if exists {
+		return fmt.Errorf("device with name %v exists in group %v", d.DeviceName, g.GroupName)
+	}
+
+	//verify json schema
+	isValid, err := utils.IsValidTelemetrySchema(d.TelemetryDataSchema)
+	if err != nil || !isValid {
+		return fmt.Errorf("error while parsing telemetry schema")
+	}
+	//All checks for provisioning a device are completed
+	//Provision device
+	d.CompanyID = existingCompanyID
+	d.GrpID = existingGroupID
+
+	/*
+		Insert code here to verify latitude and longitude values
+	*/
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("coudnt begin database transaction : %v", err)
+	}
+	defer tx.Rollback()
+
+	// Insert the new device into the 'devices' table
+	insertDeviceQuery := `
+	INSERT INTO devices (
+		device_name, 
+		group_id, 
+		company_id, 
+		telemetry_data_schema, 
+		device_description, 
+		device_type, 
+		longitude, 
+		latitude
+	)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	RETURNING id
+	`
+	var deviceID int
+	err = tx.QueryRow(insertDeviceQuery, d.DeviceName, d.GrpID, d.CompanyID, d.TelemetryDataSchema, d.DeviceDescription, d.DeviceType, d.Longitude, d.Latitude).Scan(&deviceID)
+	if err != nil {
+		return fmt.Errorf("couldnt insert device: %v", err)
+	}
+
+	//Update the number of devices in the grp table
+	updateCompanyQuery := `
+	UPDATE company
+	SET no_of_devices=no_of_devices+1
+	WHERE id = $1
+	`
+	_, err = tx.Exec(updateCompanyQuery, d.CompanyID)
+	if err != nil {
+		return fmt.Errorf("error updating company")
+	}
+
+	updateGrpQuery := `
+	UPDATE grp
+	SET	no_of_devices=no_of_devices+1
+	WHERE id = $1
+	`
+	_, err = tx.Exec(updateGrpQuery, d.GrpID)
+	if err != nil {
+		return fmt.Errorf("error updating grp")
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("error commiting transaction")
+	}
 
 	return nil
 }
