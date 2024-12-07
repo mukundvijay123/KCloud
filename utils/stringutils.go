@@ -17,3 +17,8 @@ func IsValidName(test string) bool {
 	return re.MatchString(s)
 
 }
+
+func IsNotEmptySring(test string) bool {
+	s := strings.TrimSpace(test)
+	return s != ""
+}
