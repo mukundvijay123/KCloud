@@ -2,6 +2,7 @@ package router
 
 import (
 	"database/sql"
+	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/mukundvijay123/KCloud/services/metadata"
@@ -26,5 +27,5 @@ func (s *APIServer) Run() error {
 	metadataHandler := metadata.NewHandler(s.db)
 	metadataHandler.RegisterRoutes(subrouter)
 
-	return nil
+	return http.ListenAndServe(s.addr, router)
 }
