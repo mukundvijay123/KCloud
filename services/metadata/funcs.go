@@ -1,47 +1,16 @@
-package provisioning
+package metadata
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 
+	"github.com/mukundvijay123/KCloud/types"
 	"github.com/mukundvijay123/KCloud/utils"
 )
 
-// Company struct represents the company table
-type Company struct {
-	ID              int    `json:"id"`
-	CompanyName     string `json:"company_name"`
-	Username        string `json:"username"`
-	CompanyPassword string `json:"company_password"`
-	NoOfGrps        int    `json:"no_of_grps"`
-	NoOfDevices     int    `json:"no_of_devices"`
-}
-
-// Grp struct represents grp table
-type Grp struct {
-	ID          int    ` json:"id"`
-	CompanyID   int    ` json:"company_id"`
-	GroupName   string ` json:"group_name"`
-	NoOfDevices int    ` json:"no_of_devices"`
-}
-
-// Device dtruct represents device table
-type Device struct {
-	ID                  int             `json:"id"`
-	GrpID               int             `json:"grp_id"`
-	CompanyID           int             `json:"company_id"`
-	DeviceName          string          `json:"device_name"`
-	DeviceType          string          `json:"device_type"`
-	DeviceDescription   string          `json:"device_description"`
-	Longitude           float64         `json:"longitude"`
-	Latitude            float64         `json:"latitude"`
-	TelemetryDataSchema json.RawMessage `json:"telemetry_data_schema"`
-}
-
 // Create method inserts a new company record into the database
-func (c *Company) ProvisionCompany(db *sql.DB) error {
+func ProvisionCompany(c *types.Company, db *sql.DB) error {
 
 	//Verifying if incoming credentials are correct
 	if !utils.IsValidName(c.CompanyName) {
@@ -111,7 +80,7 @@ func (c *Company) ProvisionCompany(db *sql.DB) error {
 //Below functions are for provisioning devices ,groups and companies
 
 // Method is used to provision a new group in the database
-func (g *Grp) ProvisionGroup(c *Company, db *sql.DB) error {
+func ProvisionGroup(c *types.Company, g *types.Grp, db *sql.DB) error {
 
 	//verify if group credentials are valid
 	if !utils.IsValidName(g.GroupName) {
@@ -177,7 +146,7 @@ func (g *Grp) ProvisionGroup(c *Company, db *sql.DB) error {
 
 }
 
-func (d *Device) ProvisionDevice(g *Grp, c *Company, db *sql.DB) error {
+func ProvisionDevice(g *types.Grp, c *types.Company, d *types.Device, db *sql.DB) error {
 	//verify if device credentials are valid
 	if !utils.IsValidName(d.DeviceName) {
 		log.Printf("%s : DeviceName cannot contain spaces and should only contain alphanumeric characters", d.DeviceName)
@@ -290,7 +259,7 @@ func (d *Device) ProvisionDevice(g *Grp, c *Company, db *sql.DB) error {
 //below functions are for de-provisioning a device ,group or a company
 
 // method below is to delete a company
-func (c *Company) DeleteCompany(db *sql.DB) error {
+func DeleteCompany(c *types.Company, db *sql.DB) error {
 	deleteCompanyQuery := `DELETE FROM company WHERE username = $1`
 	result, err := db.Exec(deleteCompanyQuery, c.Username)
 	if err != nil {
@@ -309,7 +278,7 @@ func (c *Company) DeleteCompany(db *sql.DB) error {
 }
 
 // Method below to delete a group
-func (g *Grp) DeleteGroup(db *sql.DB) error {
+func DeleteGroup(g *types.Grp, db *sql.DB) error {
 	//starting db transaction
 	tx, err := db.Begin()
 	if err != nil {
@@ -358,7 +327,7 @@ func (g *Grp) DeleteGroup(db *sql.DB) error {
 }
 
 // Method below to delete a device
-func (d *Device) DeleteDevice(db *sql.DB) error {
+func DeleteDevice(d *types.Device, db *sql.DB) error {
 	//start a database transaction
 	tx, err := db.Begin()
 	if err != nil {
