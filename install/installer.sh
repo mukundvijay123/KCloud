@@ -34,3 +34,5 @@ fi
 cd install
 go run install.go
 cd ..
+
+echo "Installation Complete!!"
