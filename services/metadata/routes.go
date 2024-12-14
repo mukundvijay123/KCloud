@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -26,6 +27,7 @@ func NewHandler(db *sql.DB) *Handler {
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/resources/company", h.CompanyHandler).Methods(http.MethodPost)
 	router.HandleFunc("/resources/group", h.GrpHandler).Methods(http.MethodPost)
+	router.HandleFunc("/resources/device", h.DeviceHandler).Methods(http.MethodPost)
 }
 
 // Handler function for endpoint "/resources/company"
@@ -107,6 +109,7 @@ func (h *Handler) CompanyHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Handler for endpoint "/resources/group"
 func (h *Handler) GrpHandler(w http.ResponseWriter, r *http.Request) {
 	// Limit request body size
 	r.Body = http.MaxBytesReader(w, r.Body, types.MaxMetadataRequestSize)
@@ -141,13 +144,14 @@ func (h *Handler) GrpHandler(w http.ResponseWriter, r *http.Request) {
 	companyPassword := r.FormValue("company_password")
 	groupName := r.FormValue("group_name")
 
+	//Validate form information
 	if !utils.IsValidName(companyUsername) || !utils.IsValidName(groupName) || !utils.IsNotEmptySring(companyPassword) {
 		fmt.Println(utils.IsNotEmptySring(companyPassword), utils.IsNotEmptySring(companyPassword), utils.IsValidName(groupName))
 		http.Error(w, "Invalid field(s)", http.StatusBadRequest)
 		return
 	}
 
-	//if action is create
+	//actiion => Create
 	if action == "create" {
 		comapanyToBeProcessed := types.Company{
 			Username:        companyUsername,
@@ -162,7 +166,7 @@ func (h *Handler) GrpHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	} else if action == "delete" {
+	} else if action == "delete" { //Delete action
 		comapanyToBeProcessed := types.Company{
 			Username:        companyUsername,
 			CompanyPassword: companyPassword,
@@ -181,10 +185,119 @@ func (h *Handler) GrpHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Successful response
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Company operation successful"))
+	w.Write([]byte("Group operation successful"))
 
 }
 
+// Handler function for endpoint "/resource/device"
+func (h *Handler) DeviceHandler(w http.ResponseWriter, r *http.Request) {
+	// Limit request body size
+	r.Body = http.MaxBytesReader(w, r.Body, types.MaxMetadataRequestSize)
+
+	// Parse the form in request body
+	if err := parseFormData(w, r); err != nil {
+		return
+	}
+
+	// Extract the action from the form
+	action := r.FormValue("action")
+	if action != "create" && action != "delete" {
+		http.Error(w, "Invalid action", http.StatusBadRequest)
+		return
+	}
+
+	// Define compulsory fields for each action
+	var requiredFields []string
+	if action == "create" {
+		requiredFields = []string{"company_username", "company_password", "group_name", "device_name", "telemetry_data_schema", "device_description", "device_type", "longitude", "latitude"}
+	} else if action == "delete" {
+		requiredFields = []string{"company_username", "company_password", "group_name", "device_name"}
+	}
+
+	// Enforce compulsory fields
+	if err := checkRequiredFields(w, r, requiredFields); err != nil {
+		return
+	}
+
+	//Extracting Information from the device
+	companyUsername := r.FormValue("company_username")
+	companyPassword := r.FormValue("company_password")
+	groupName := r.FormValue("group_name")
+	deviceName := r.FormValue("device_name")
+
+	//Validating information from the form
+	if !utils.IsValidName(companyUsername) || !utils.IsValidName(groupName) || !utils.IsValidName(deviceName) || !utils.IsNotEmptySring(companyPassword) {
+		http.Error(w, "invalid field(s)", http.StatusBadRequest)
+		return
+	}
+	//Create a device
+	if action == "create" {
+		telemetryDataSchema := json.RawMessage(r.FormValue("telemetry_data_schema"))
+		deviceDescription := r.FormValue("device_description")
+		deviceType := r.FormValue("device_type")
+		longitude, latitude, err := utils.LocationValidator(r.FormValue("longitude"), r.FormValue("latitude")) //Parsing and extracting latitude and longitude from the form
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		//Validating more form information
+		if !utils.IsNotEmptySring(deviceType) || !utils.IsNotEmptySring(deviceDescription) {
+			http.Error(w, "Invalid/Empty device description or device type", http.StatusBadRequest)
+			return
+		}
+
+		companyToBeProcessed := types.Company{
+			Username:        companyUsername,
+			CompanyPassword: companyPassword,
+		}
+
+		groupToBeProcessed := types.Grp{
+			GroupName: groupName,
+		}
+
+		deviceToBeProcessed := types.Device{
+			DeviceName:          deviceName,
+			DeviceType:          deviceType,
+			DeviceDescription:   deviceDescription,
+			TelemetryDataSchema: telemetryDataSchema,
+			Longitude:           longitude,
+			Latitude:            latitude,
+		}
+
+		//Creating a device
+		if err := ProvisionDevice(&groupToBeProcessed, &companyToBeProcessed, &deviceToBeProcessed, h.db); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+	} else if action == "delete" { //Delete action
+		companyToBeProcessed := types.Company{
+			Username:        companyUsername,
+			CompanyPassword: companyPassword,
+		}
+
+		groupToBeProcessed := types.Grp{
+			GroupName: groupName,
+		}
+
+		deviceToBeProcessed := types.Device{
+			DeviceName: deviceName,
+		}
+
+		//Deleting the device
+		if err := DeleteDevice(&companyToBeProcessed, &groupToBeProcessed, &deviceToBeProcessed, h.db); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Successful response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Device operation successful"))
+}
+
+// Below functions are helper functions for the handler functions
+// Function to parse form data
 func parseFormData(w http.ResponseWriter, r *http.Request) error {
 	err := r.ParseMultipartForm(types.MaxMetadataRequestSize) // setting max size
 	if err != nil {
@@ -199,6 +312,7 @@ func parseFormData(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// Function t check required fields
 func checkRequiredFields(w http.ResponseWriter, r *http.Request, requiredFields []string) error {
 	for _, field := range requiredFields {
 		value := r.FormValue(field)
@@ -210,15 +324,3 @@ func checkRequiredFields(w http.ResponseWriter, r *http.Request, requiredFields 
 	}
 	return nil
 }
-
-/*
-
-func readRequestBody(w http.ResponseWriter, r *http.Request) ([]byte, error) {
-	rawBody, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Unable to read request body", http.StatusInternalServerError)
-		return nil, err
-	}
-	return rawBody, nil
-}
-*/
