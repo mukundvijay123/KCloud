@@ -278,18 +278,37 @@ func DeleteCompany(c *types.Company, db *sql.DB) error {
 }
 
 // Method below to delete a group
-func DeleteGroup(g *types.Grp, db *sql.DB) error {
+func DeleteGroup(c *types.Company, g *types.Grp, db *sql.DB) error {
 	//starting db transaction
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("error starting a database transaction")
 	}
 	defer tx.Rollback()
-	//updating number of devices
+	//fetching grp_id
+	fetchGrpIdQuery := `
+	SELECT id,no_of_devices
+	FROM grp
+	WHERE company_id = (
+		SELECT id
+		FROM company
+		WHERE username = $1
+	)
+	AND group_name = $2;`
+	err = db.QueryRow(fetchGrpIdQuery, c.Username, g.GroupName).Scan(&g.ID, &g.NoOfDevices)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("no group found for the given username and group name")
+		} else {
+			return fmt.Errorf("error executing query: %v", err)
+		}
+	}
+
+	//updating number of devices and grps in company table
 	updateCompanyQuery := `UPDATE company SET no_of_devices = no_of_devices - $1,
 	no_of_grps = no_of_grps -1 
-	WHERE id = $2`
-	result, err := tx.Exec(updateCompanyQuery, g.NoOfDevices, g.CompanyID)
+	WHERE username = $2`
+	result, err := tx.Exec(updateCompanyQuery, g.NoOfDevices, c.Username)
 	if err != nil {
 		return fmt.Errorf("error updating devices in the database : %v", err)
 	}
@@ -302,8 +321,8 @@ func DeleteGroup(g *types.Grp, db *sql.DB) error {
 	}
 
 	//Deleting group
-	deleteGroupQuery := `DELETE FROM grp WHERE id = $1 AND company_id = $2`
-	result, err = tx.Exec(deleteGroupQuery, g.ID, g.CompanyID)
+	deleteGroupQuery := `DELETE FROM grp WHERE id = $1`
+	result, err = tx.Exec(deleteGroupQuery, g.ID)
 	if err != nil {
 		return fmt.Errorf("error while deleting group with id %v, err:%v", g.ID, err)
 	}
