@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 )
 
 // This function is used to check if a schema of a daata of a device is correct while device registration
@@ -54,4 +55,30 @@ func isValidValue(value interface{}) bool {
 		return false
 	}
 	return false
+}
+
+// LocationValidator validates and converts longitude and latitude from strings to float64.
+func LocationValidator(longitude, latitude string) (float64, float64, error) {
+	// Convert longitude and latitude from string to float64
+	lat, err := strconv.ParseFloat(latitude, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid latitude value: %v", err)
+	}
+
+	lon, err := strconv.ParseFloat(longitude, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid longitude value: %v", err)
+	}
+
+	// Validate latitude range (-90 to 90)
+	if lat < -90 || lat > 90 {
+		return 0, 0, fmt.Errorf("latitude must be between -90 and 90")
+	}
+
+	// Validate longitude range (-180 to 180)
+	if lon < -180 || lon > 180 {
+		return 0, 0, fmt.Errorf("longitude must be between -180 and 180")
+	}
+	// Return the validated values
+	return lon, lat, nil
 }

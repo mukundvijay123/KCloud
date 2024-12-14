@@ -346,7 +346,7 @@ func DeleteGroup(c *types.Company, g *types.Grp, db *sql.DB) error {
 }
 
 // Method below to delete a device
-func DeleteDevice(d *types.Device, db *sql.DB) error {
+func DeleteDevice(c *types.Company, g *types.Grp, d *types.Device, db *sql.DB) error {
 	//start a database transaction
 	tx, err := db.Begin()
 	if err != nil {
@@ -355,8 +355,8 @@ func DeleteDevice(d *types.Device, db *sql.DB) error {
 	defer tx.Rollback()
 
 	//update no_of_devices in grp and company table
-	updateCompanyQuery := `UPDATE company SET no_of_devices = no_of_devices -1 WHERE id = $1`
-	result, err := tx.Exec(updateCompanyQuery, d.CompanyID)
+	updateCompanyQuery := `UPDATE company SET no_of_devices = no_of_devices -1 WHERE username = $1`
+	result, err := tx.Exec(updateCompanyQuery, c.Username)
 	if err != nil {
 		return fmt.Errorf("error while updating comapny table , %v", err)
 	}
@@ -369,8 +369,27 @@ func DeleteDevice(d *types.Device, db *sql.DB) error {
 		return fmt.Errorf("comapny for device doesnt exist, err ")
 	}
 
+	//fetch grp id from gp name
+	fetchGrpIdQuery := `
+	SELECT id
+	FROM grp
+	WHERE company_id = (
+		SELECT id
+		FROM company
+		WHERE username = $1
+	)
+	AND group_name = $2;`
+	err = db.QueryRow(fetchGrpIdQuery, c.Username, g.GroupName).Scan(&g.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("no group found for the given username and group name")
+		} else {
+			return fmt.Errorf("error executing query: %v", err)
+		}
+	}
+
 	updateGroupQuery := `UPDATE grp SET no_of_devices = no_of_devices -1 WHERE id = $1`
-	result, err = tx.Exec(updateGroupQuery, d.GrpID)
+	result, err = tx.Exec(updateGroupQuery, g.ID)
 	if err != nil {
 		return fmt.Errorf("error while updating no_of_devices in grp table")
 	}
@@ -385,21 +404,10 @@ func DeleteDevice(d *types.Device, db *sql.DB) error {
 	}
 
 	//delete the device from device table
-	deleteDeviceQuery := `DELETE FROM devices WHERE id = $1`
-	result, err = tx.Exec(deleteDeviceQuery, d.ID)
+	deleteDeviceQuery := `DELETE FROM devices WHERE group_id = $1 AND device_name=$2 RETURNING id`
+	err = tx.QueryRow(deleteDeviceQuery, g.ID, d.DeviceName).Scan(&d.ID)
 	if err != nil {
 		return fmt.Errorf("error while deleting form devices table:%v", err)
-	}
-
-	rowsAffected, err = result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("error while determining rows affected by delete query")
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("device for id %v doesnt exist", d.ID)
-	} else if rowsAffected != 1 {
-		return fmt.Errorf("more than one row(device) is being deleted")
 	}
 
 	//commit the transaction
