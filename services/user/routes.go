@@ -11,7 +11,7 @@ import (
 )
 
 const LoginSuccessMessage = "Login successful"
-const LoginUnsuccessfulMessage = "Login unsuccessfuls"
+const LoginUnsuccessfulMessage = "Login unsuccessfull"
 
 // Handler struct for metadata service
 // Anything the handler function needs access to should be enclosed in this struct
@@ -39,7 +39,7 @@ func (h *Handler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Define compulsory fields for each action
-	requiredFields := []string{"company_username", "company,password"}
+	requiredFields := []string{"company_username", "company_password"}
 	if err := checkRequiredFields(w, r, requiredFields); err != nil {
 		return
 	}
