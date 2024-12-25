@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	conStr := "host=localhost port=5432 user=postgres password=123456789 dbname=kcloud sslmode=disable"
+	conStr := "host=192.168.1.12 port=5432 user=postgres password=123456789 dbname=kcloud sslmode=disable"
 	db1, err := sql.Open("postgres", conStr)
 	if err != nil {
 		log.Fatal("error connecting to postgres: ", err)

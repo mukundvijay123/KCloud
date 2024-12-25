@@ -312,7 +312,7 @@ func parseFormData(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// Function t check required fields
+// Function to check required fields
 func checkRequiredFields(w http.ResponseWriter, r *http.Request, requiredFields []string) error {
 	for _, field := range requiredFields {
 		value := r.FormValue(field)
