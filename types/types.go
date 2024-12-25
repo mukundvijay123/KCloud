@@ -3,6 +3,7 @@ package types
 import "encoding/json"
 
 const MaxMetadataRequestSize = 1024 * 10
+const MaxUserRequestSize = 1024 * 10
 
 // Company struct represents the company table
 type Company struct {
