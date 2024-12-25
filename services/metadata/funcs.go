@@ -38,8 +38,8 @@ func ProvisionCompany(c *types.Company, db *sql.DB) error {
 	checkQuery := `SELECT id FROM company WHERE username = $1`
 	err = tx.QueryRow(checkQuery, c.Username).Scan(&existingCompanyID)
 
-	if err != nil {
-		if err == sql.ErrNoRows {
+	if err != sql.ErrNoRows {
+		if err != nil {
 			return fmt.Errorf("failed to check username uniqueness: %v", err)
 		}
 
