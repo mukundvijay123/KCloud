@@ -7,6 +7,7 @@ import (
 	"github.com/mukundvijay123/KCloud/types"
 )
 
+// Function for endpoint /user/login for users using Web UI to login
 func UILogin(c *types.Company, db *sql.DB) (bool, error) {
 
 	//Query for Login

@@ -54,11 +54,13 @@ func (h *Handler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//Initialising a company user
 	UserToBeLoggedIn := types.Company{
 		Username:        companyUsername,
 		CompanyPassword: companyPassword,
 	}
 
+	//Useing UILogin functiion to determine if login was successful
 	loginSuccess, err := UILogin(&UserToBeLoggedIn, h.db)
 	if err != nil {
 		http.Error(w, "Error logging in", http.StatusInternalServerError)
