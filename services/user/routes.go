@@ -11,7 +11,7 @@ import (
 )
 
 const LoginSuccessMessage = "Login successful"
-const LoginUnsuccessfulMessage = "Login unsuccessfull"
+const LoginUnsuccessfulMessage = "Login unsuccessful"
 
 // Handler struct for metadata service
 // Anything the handler function needs access to should be enclosed in this struct
@@ -63,12 +63,19 @@ func (h *Handler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	//Useing UILogin functiion to determine if login was successful
 	loginSuccess, err := UILogin(&UserToBeLoggedIn, h.db)
 	if err != nil {
-		http.Error(w, "Error logging in", http.StatusInternalServerError)
-		w.Write([]byte(LoginUnsuccessfulMessage))
-		return
+		if err.Error() == "failed to login" {
+			fmt.Println(err)
+			http.Error(w, "Error logging in", http.StatusInternalServerError)
+			w.Write([]byte(LoginUnsuccessfulMessage))
+			return
+		} else {
+			http.Error(w, "Incorrect Credentials", http.StatusAccepted)
+			w.Write([]byte(LoginUnsuccessfulMessage))
+			return
+		}
 	} else if loginSuccess {
-		w.Write([]byte(LoginSuccessMessage))
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(LoginSuccessMessage))
 	} else {
 		http.Error(w, "Incorrect Credentials", http.StatusAccepted)
 		w.Write([]byte(LoginUnsuccessfulMessage))
