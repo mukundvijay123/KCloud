@@ -68,14 +68,14 @@ func (h *Handler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if loginSuccess {
 		w.Write([]byte(LoginSuccessMessage))
+		w.WriteHeader(http.StatusOK)
 	} else {
 		http.Error(w, "Incorrect Credentials", http.StatusAccepted)
 		w.Write([]byte(LoginUnsuccessfulMessage))
 		return
 	}
 
-	// Successful response
-	w.WriteHeader(http.StatusOK)
+	// The control flow will never reach here
 
 }
 
