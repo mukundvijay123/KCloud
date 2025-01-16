@@ -146,7 +146,6 @@ func (h *Handler) GrpHandler(w http.ResponseWriter, r *http.Request) {
 
 	//Validate form information
 	if !utils.IsValidName(companyUsername) || !utils.IsValidName(groupName) || !utils.IsNotEmptySring(companyPassword) {
-		fmt.Println(utils.IsNotEmptySring(companyPassword), utils.IsNotEmptySring(companyPassword), utils.IsValidName(groupName))
 		http.Error(w, "Invalid field(s)", http.StatusBadRequest)
 		return
 	}
