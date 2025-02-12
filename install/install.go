@@ -144,7 +144,7 @@ func createTables(db *sql.DB) error {
 		id SERIAL PRIMARY KEY,
 		company_name VARCHAR(32) NOT NULL,
 		username VARCHAR(32) NOT NULL UNIQUE,
-		company_password VARCHAR(32) NOT NULL,
+		company_password VARCHAR(64) NOT NULL,
 		no_of_grps INT NOT NULL,
 		no_of_devices INT NOT NULL
 	);`

@@ -21,7 +21,7 @@ func ProvisionCompany(c *types.Company, db *sql.DB) error {
 		log.Printf("%s :Username cannot consist of spaces and should have only alphanumeric characters", c.Username)
 		return fmt.Errorf("username cannot consist of spaces and should have only alphanumeric characters")
 	}
-	if !utils.IsValidName(c.CompanyPassword) {
+	if !utils.IsNotEmptySring(c.CompanyPassword) {
 		log.Printf("Invalid Password")
 		return fmt.Errorf("password cannot consist of spaces and should have only alphanumeric characters")
 	}

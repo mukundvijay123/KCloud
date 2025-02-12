@@ -8,14 +8,13 @@ import (
 )
 
 // Function for endpoint /user/login for users using Web UI to login
-func UILogin(c *types.Company, db *sql.DB) (bool, error) {
+func Login(c *types.Company, db *sql.DB) (bool, error) {
 
 	//Query for Login
 	LoginQuery := `SELECT id FROM company WHERE username=$1 AND company_password=$2`
 
 	var userID int
 	err := db.QueryRow(LoginQuery, c.Username, c.CompanyPassword).Scan(&userID)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, fmt.Errorf("incorrect credentials")
