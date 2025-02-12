@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	authentication "github.com/mukundvijay123/KCloud/middleware/auth"
 	"github.com/mukundvijay123/KCloud/services/metadata"
 	"github.com/mukundvijay123/KCloud/services/user"
 )
@@ -25,8 +26,10 @@ func (s *APIServer) Run() error {
 	router := mux.NewRouter()
 	subrouter := router.PathPrefix("/api/v1").Subrouter()
 
+	metadataSubRouter := subrouter.PathPrefix("/resources").Subrouter()
+	metadataSubRouter.Use(authentication.JWTMiddleware)
 	metadataHandler := metadata.NewHandler(s.db)
-	metadataHandler.RegisterRoutes(subrouter)
+	metadataHandler.RegisterRoutes(metadataSubRouter)
 
 	userHandler := user.NewHandler(s.db)
 	userHandler.RegisterRoutes(subrouter)
