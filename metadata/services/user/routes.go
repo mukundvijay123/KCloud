@@ -7,10 +7,11 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	authentication "github.com/mukundvijay123/KCloud/middleware/auth"
-	"github.com/mukundvijay123/KCloud/services/metadata"
-	"github.com/mukundvijay123/KCloud/types"
-	"github.com/mukundvijay123/KCloud/utils"
+	authentication "github.com/mukundvijay123/KCloud/metadata/middleware/auth"
+	"github.com/mukundvijay123/KCloud/metadata/services/metadata"
+	"github.com/mukundvijay123/KCloud/metadata/types"
+	"github.com/mukundvijay123/KCloud/metadata/utils"
+
 	"golang.org/x/crypto/bcrypt"
 )
 

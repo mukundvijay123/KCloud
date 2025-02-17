@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/mukundvijay123/KCloud/types"
-	"github.com/mukundvijay123/KCloud/utils"
+	"github.com/mukundvijay123/KCloud/metadata/types"
+	"github.com/mukundvijay123/KCloud/metadata/utils"
 )
 
 // Handler struct for metadata service

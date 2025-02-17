@@ -158,6 +158,7 @@ func createTables(db *sql.DB) error {
 	);`
 	devicesCreateQuery := `CREATE TABLE devices (
 		id SERIAL PRIMARY KEY,
+		device_secret VARCHAR(64) NOT NULL UNIQUE,
 		device_name VARCHAR(32) NOT NULL ,
 		group_id INT NOT NULL,
 		company_id INT NOT NULL,

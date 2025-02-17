@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mukundvijay123/KCloud/types"
-	"github.com/mukundvijay123/KCloud/utils"
+	"github.com/mukundvijay123/KCloud/metadata/types"
+	"github.com/mukundvijay123/KCloud/metadata/utils"
 )
 
 // Create method inserts a new company record into the database

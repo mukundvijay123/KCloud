@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	authentication "github.com/mukundvijay123/KCloud/middleware/auth"
-	"github.com/mukundvijay123/KCloud/services/metadata"
-	"github.com/mukundvijay123/KCloud/services/user"
+	authentication "github.com/mukundvijay123/KCloud/metadata/middleware/auth"
+	"github.com/mukundvijay123/KCloud/metadata/services/metadata"
+	"github.com/mukundvijay123/KCloud/metadata/services/user"
 )
 
 type APIServer struct {

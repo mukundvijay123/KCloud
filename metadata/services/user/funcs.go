@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/mukundvijay123/KCloud/types"
+	"github.com/mukundvijay123/KCloud/metadata/types"
 )
 
 // Function for endpoint /user/login for users using Web UI to login
