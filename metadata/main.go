@@ -6,7 +6,7 @@ import (
 	"log"
 
 	_ "github.com/lib/pq"
-	"github.com/mukundvijay123/KCloud/router"
+	"github.com/mukundvijay123/KCloud/metadata/router"
 )
 
 func main() {
