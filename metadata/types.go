@@ -29,14 +29,6 @@ type Device struct {
 	TelemetryDataSchema TelemetrySchema `json:"telemetry_data_schema"` //Non nested json schema with colname:type mapping
 }
 
-type User struct {
-	UserID    uuid.UUID   `json:"id"`
-	Username  string      `json:"username"`
-	UserType  string      `json:"usertype"`
-	CompanyID uuid.UUID   `json:"company_id"`
-	Groups    []uuid.UUID `json:"groups"`
-}
-
 type TelemetrySchema map[string]string
 
 type Location struct {

@@ -18,4 +18,5 @@ type MetadataStore interface {
 	DeleteDevice(d *Device) error                                //Deletes a device entry
 	UpdateDeviceLocation(d *Device, l *Location) error           //Update Device Location
 	UpdateDeviceSchema(d *Device, schema *TelemetrySchema) error //Updates Device Schema
+
 }

@@ -6,13 +6,14 @@ import (
 	"log"
 
 	"github.com/gorilla/mux"
+	"github.com/mukundvijay123/KCloud/metadata"
 	metadatastore "github.com/mukundvijay123/KCloud/metadata/metadataStore"
 )
 
 type MetadataRouter struct {
 	dbConn        *sql.DB
 	logger        *log.Logger
-	MdataStore    *metadatastore.MetadataDb
+	MdataStore    metadata.MetadataStore
 	JWTMiddleWare *JWTMiddleWare
 	Router        *mux.Router
 }
@@ -37,6 +38,11 @@ func (m *MetadataRouter) CreateRouter() error {
 	if err != nil {
 		return fmt.Errorf("error initialising router")
 	}
+
+	return nil
+}
+
+func (m *MetadataRouter) AddJWTMiddleWare() error {
 
 	return nil
 }
