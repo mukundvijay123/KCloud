@@ -1,0 +1,48 @@
+package metadatarouter
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+
+	"github.com/gorilla/mux"
+	"github.com/mukundvijay123/KCloud/metadata"
+	metadatastore "github.com/mukundvijay123/KCloud/metadata/metadataStore"
+)
+
+type MetadataRouter struct {
+	dbConn        *sql.DB
+	logger        *log.Logger
+	MdataStore    metadata.MetadataStore
+	JWTMiddleWare *JWTMiddleWare
+	Router        *mux.Router
+}
+
+func NewMetadataRouter(dbConn *sql.DB, logger *log.Logger) *MetadataRouter {
+	if logger == nil {
+		logger = log.Default()
+	}
+
+	return &MetadataRouter{
+		dbConn:     dbConn,
+		logger:     logger,
+		MdataStore: metadatastore.NewMetadataDb(dbConn, logger),
+	}
+}
+
+//Function to add JWT middleware here
+
+func (m *MetadataRouter) CreateRouter() error {
+	m.Router = mux.NewRouter()
+	err := m.AddRoutes()
+	if err != nil {
+		return fmt.Errorf("error initialising router")
+	}
+
+	return nil
+}
+
+func (m *MetadataRouter) AddJWTMiddleWare() error {
+
+	return nil
+}
